@@ -1,0 +1,35 @@
+[project]
+name = "ai-image-classification"
+version = "0.1.0"
+description = "基于手写 ResNet 的图像分类项目(灵境竞赛组 · 后端 AI 方向 第一阶段)"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "matplotlib>=3.11.2",
+    "numpy>=2.5.4",
+    "pandas>=3.0.6",
+    "pillow>=12.3.0",
+    "torch>=2.9.0",
+    "torchvision>=0.24.0",
+    "tqdm>=4.70.1",
+]
+
+[project.scripts]
+ai-image-classification = "ai_image_classification:main"
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu128" }]
+torchvision = [{ index = "pytorch-cu128" }]
+
+[tool.uv]
+# 缓存盘(C:)与项目盘(D:)不同卷,无法硬链接,统一改为复制以免反复告警
+link-mode = "copy"
+
+[build-system]
+requires = ["uv_build>=0.13.0,<0.14.0"]
+build-backend = "uv_build"
