@@ -36,8 +36,29 @@ uv run scripts/check_env.py
 ├── pyproject.toml          # 依赖与 PyTorch CUDA 源配置
 ├── uv.lock                 # 锁定精确版本,保证环境可复现
 ├── .python-version         # 固定 Python 3.12
+├── data/                   # 数据集(不入库)
+├── docs/                   # 项目计划与学习笔记
+├── outputs/                # 图表与统计结果(不入库)
 ├── scripts/
-│   └── check_env.py        # 环境自检脚本
+│   ├── check_env.py        # 环境自检脚本
+│   └── download_data.py    # 数据集下载与校验
 └── src/
     └── ai_image_classification/
 ```
+
+## 数据集
+
+采用德国交通标志识别基准 **GTSRB**(German Traffic Sign Recognition Benchmark),
+共 43 类交通标志:
+
+- 训练集 26,640 张,测试集 12,630 张,合计 39,270 张
+- 图片为 PPM 格式,尺寸不统一(25×25 ~ 243×225),需统一缩放
+- 类别不平衡:每类 150 ~ 1500 张,最多与最少相差 10 倍
+
+```bash
+uv run scripts/download_data.py
+```
+
+脚本会自动完成下载、MD5 校验、解压,并输出类别分布统计到
+`outputs/class_distribution.csv`。数据来源:
+https://benchmark.ini.rub.de/gtsrb_dataset.html
