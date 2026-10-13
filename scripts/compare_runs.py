@@ -20,8 +20,10 @@ from ai_image_classification.data import FIGURE_DIR, setup_chinese_font  # noqa:
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 LABELS = {
-    "baseline": "基线(完整配置)",
-    "no-skip": "去掉跳跃连接",
+    "baseline": "基线(18 层,完整配置)",
+    "no-skip": "去掉跳跃连接(18 层)",
+    "skip34": "带跳跃连接(34 层)",
+    "noskip34": "去掉跳跃连接(34 层)",
     "no-augment": "关闭数据增强",
     "class-weights": "类别加权损失",
 }

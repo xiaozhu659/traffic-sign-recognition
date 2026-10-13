@@ -23,7 +23,7 @@ from torch import nn  # noqa: E402
 
 from .data import FIGURE_DIR, setup_chinese_font  # noqa: E402
 from .dataset import build_dataloaders, class_counts  # noqa: E402
-from .models import build_resnet18, count_parameters  # noqa: E402
+from .models import RESNET_DEPTHS, build_resnet, count_parameters  # noqa: E402
 
 
 def train_one_epoch(model, loader, criterion, optimizer, device) -> tuple[float, float]:
@@ -125,6 +125,8 @@ def parse_args() -> argparse.Namespace:
                         help="只取少量样本快速验证流程")
     parser.add_argument("--tag", type=str, default="baseline",
                         help="本次运行的名称,结果存到 outputs/runs/<tag>/")
+    parser.add_argument("--depth", type=int, default=18, choices=sorted(RESNET_DEPTHS),
+                        help="网络深度,18 或 34")
     parser.add_argument("--no-skip", action="store_true",
                         help="去掉跳跃连接(消融实验用)")
     parser.add_argument("--class-weights", action="store_true",
@@ -160,7 +162,8 @@ def main() -> None:
     print(f"训练样本 {len(train_df)} 张,验证样本 {len(val_df)} 张,"
           f"训练批次数 {len(train_loader)}")
 
-    model = build_resnet18(num_classes=43, use_skip=not args.no_skip).to(device)
+    layers = RESNET_DEPTHS[args.depth]
+    model = build_resnet(layers, num_classes=43, use_skip=not args.no_skip).to(device)
     print(f"模型参数量:{count_parameters(model) / 1e6:.2f} M"
           f"{'(已去掉跳跃连接)' if args.no_skip else ''}")
 
@@ -209,6 +212,7 @@ def main() -> None:
                 "epoch": int(epoch),
                 "val_acc": float(val_acc),
                 "use_skip": not args.no_skip,
+                "layers": list(layers),
             }, out_dir / "best.pt")
 
     history_df = pd.DataFrame(history)
@@ -220,6 +224,7 @@ def main() -> None:
     # 记录本次运行的配置与最终结果,便于后续对比
     summary = {
         "tag": args.tag,
+        "depth": args.depth,
         "use_skip": not args.no_skip,
         "augment": not args.no_augment,
         "class_weights": args.class_weights,

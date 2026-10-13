@@ -67,7 +67,8 @@ def plot_confusion(confusion: np.ndarray, tag: str, out_dir: Path) -> None:
 def plot_comparison(results: list[dict], per_class: pd.DataFrame, out_dir: Path) -> None:
     fig, axes = plt.subplots(1, 3, figsize=(17, 4.8))
     tags = [r["tag"] for r in results]
-    colors = ["#5b9bd5", "#f0a04b", "#7fb069", "#c0392b"][: len(tags)]
+    palette = ["#5b9bd5", "#f0a04b", "#7fb069", "#c0392b", "#8e6bbf", "#d98cb3"]
+    colors = palette[: len(tags)]
 
     # 左:整体测试准确率
     axes[0].bar(tags, [r["test_acc"] * 100 for r in results], color=colors)
@@ -78,11 +79,13 @@ def plot_comparison(results: list[dict], per_class: pd.DataFrame, out_dir: Path)
         axes[0].text(i, r["test_acc"] * 100 + 0.05, f"{r['test_acc'] * 100:.2f}",
                      ha="center", fontsize=9)
 
-    # 中:稀有类别的平均准确率(样本最少的 15 个类别)
-    rare_ids = list(range(15))
+    # 中:稀有类别的平均准确率。
+    # 注意:这里的编号必须按样本数排序取出来,不能写死成 0-14——
+    # 类别 0-14 里混着样本最多的限速牌,拿它们当"稀有类别"会得出完全错误的结论。
+    rare_ids = list(per_class["samples"].sort_values().head(15).index)
     axes[1].bar(tags, [r["rare_acc"] * 100 for r in results], color=colors)
     axes[1].set_ylabel("准确率(%)")
-    axes[1].set_title(f"样本最少的 {len(rare_ids)} 个类别平均准确率")
+    axes[1].set_title("样本最少的 15 个类别平均准确率")
     axes[1].tick_params(axis="x", rotation=15)
     for i, r in enumerate(results):
         axes[1].text(i, r["rare_acc"] * 100 + 0.05, f"{r['rare_acc'] * 100:.2f}",
@@ -92,7 +95,7 @@ def plot_comparison(results: list[dict], per_class: pd.DataFrame, out_dir: Path)
     for tag, color in zip(tags, colors):
         axes[2].plot(per_class.index, per_class[tag] * 100, marker="o", markersize=3,
                      label=tag, color=color)
-    axes[2].set_xlabel("类别编号(0-14 为样本稀少类别)")
+    axes[2].set_xlabel("类别编号")
     axes[2].set_ylabel("准确率(%)")
     axes[2].set_title("逐类别准确率对比")
     axes[2].legend(fontsize=8)
@@ -110,6 +113,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--tags", nargs="+", default=["baseline"],
                         help="outputs/runs/<tag>/best.pt 里的运行名称,可传多个")
     parser.add_argument("--num-workers", type=int, default=4)
+    parser.add_argument("--plot-only", action="store_true",
+                        help="不加载模型,直接用上次评估保存的 CSV 重画对比图")
     return parser.parse_args()
 
 
@@ -118,6 +123,13 @@ def main() -> None:
     setup_chinese_font()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     project_root = Path(__file__).resolve().parents[2]
+
+    if args.plot_only:
+        # 只重画图:模型评估很慢,改了画图逻辑没必要重跑一遍
+        results = pd.read_csv(FIGURE_DIR / "comparison.csv").to_dict("records")
+        per_class_df = pd.read_csv(FIGURE_DIR / "per_class_accuracy_all.csv", index_col=0)
+        plot_comparison(results, per_class_df, FIGURE_DIR)
+        return
 
     test_loader, annotations = build_test_loader(num_workers=args.num_workers)
     print(f"测试集共 {len(annotations)} 张,类别数 {NUM_CLASSES}\n")

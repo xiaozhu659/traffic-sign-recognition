@@ -19,15 +19,16 @@ from PIL import Image  # noqa: E402
 from .data import FIGURE_DIR, TEST_IMAGES_DIR, load_test_annotations, setup_chinese_font
 from .dataset import CHANNEL_MEAN, CHANNEL_STD, INPUT_SIZE
 from .labels import en, zh  # noqa: E402
-from .models import build_resnet18
+from .models import build_resnet, infer_layers
 
 
 def load_model(checkpoint: Path, device: torch.device, use_skip: bool | None = None):
     """加载检查点。
 
-    use_skip 传 None 时会自动判断:消融实验里去掉跳跃连接的模型没有 1x1 投影层,
-    结构不同,直接按默认结构加载会报键名缺失。这里根据权重里有没有 downsample
-    来自动选择结构,调用方就不需要记住每个检查点是哪种配置了。
+    网络结构和深度都从权重里自动推断,调用方不需要记住每个检查点是什么配置:
+      * 去掉跳跃连接的模型没有 1x1 投影层,看有没有 downsample 就知道;
+      * 深度看 layer1~layer4 各有几个残差块。
+    否则按默认结构加载会报键名缺失或多余。
     """
     try:
         # 优先用安全模式加载(只允许张量和基本类型)
@@ -40,7 +41,8 @@ def load_model(checkpoint: Path, device: torch.device, use_skip: bool | None = N
     if use_skip is None:
         use_skip = any("downsample" in key for key in state["model"])
 
-    model = build_resnet18(num_classes=43, use_skip=use_skip).to(device)
+    layers = infer_layers(state["model"])
+    model = build_resnet(layers=layers, num_classes=43, use_skip=use_skip).to(device)
     model.load_state_dict(state["model"])
     model.eval()
     return model, state

@@ -144,9 +144,47 @@ class ResNet(nn.Module):
         return self.fc(x)
 
 
+# 常见深度的层数配置:第一个 stage 重复 2 次就是 ResNet-18,3/4/6/3 就是 ResNet-34
+RESNET_DEPTHS = {
+    18: (2, 2, 2, 2),
+    34: (3, 4, 6, 3),
+}
+
+
+def build_resnet(
+    layers: tuple[int, int, int, int] = (2, 2, 2, 2),
+    num_classes: int = 43,
+    use_skip: bool = True,
+) -> ResNet:
+    """按给定的层数配置构造网络。"""
+    return ResNet(num_classes=num_classes, layers=layers, use_skip=use_skip)
+
+
 def build_resnet18(num_classes: int = 43, use_skip: bool = True) -> ResNet:
     """构造 ResNet-18;use_skip=False 时得到去掉跳跃连接的对照组。"""
-    return ResNet(num_classes=num_classes, layers=(2, 2, 2, 2), use_skip=use_skip)
+    return build_resnet(RESNET_DEPTHS[18], num_classes=num_classes, use_skip=use_skip)
+
+
+def build_resnet34(num_classes: int = 43, use_skip: bool = True) -> ResNet:
+    """构造 ResNet-34,用于验证"网络越深,残差连接越重要"这一判断。"""
+    return build_resnet(RESNET_DEPTHS[34], num_classes=num_classes, use_skip=use_skip)
+
+
+def infer_layers(state_dict) -> tuple[int, int, int, int]:
+    """从权重里推断出网络深度配置。
+
+    保存检查点时并不知道以后会拿它做什么,所以加载时最好自己判断结构:
+    数一数 layer1~layer4 各有几个残差块,就能还原出 (2,2,2,2) 还是 (3,4,6,3)。
+    """
+    counts = []
+    for stage in (1, 2, 3, 4):
+        indices = {
+            int(key.split(".")[1])
+            for key in state_dict
+            if key.startswith(f"layer{stage}.")
+        }
+        counts.append(len(indices))
+    return tuple(counts)  # type: ignore[return-value]
 
 
 def count_parameters(model: nn.Module) -> int:
