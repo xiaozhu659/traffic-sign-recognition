@@ -208,6 +208,7 @@ def main() -> None:
                 "model": model.state_dict(),
                 "epoch": int(epoch),
                 "val_acc": float(val_acc),
+                "use_skip": not args.no_skip,
             }, out_dir / "best.pt")
 
     history_df = pd.DataFrame(history)

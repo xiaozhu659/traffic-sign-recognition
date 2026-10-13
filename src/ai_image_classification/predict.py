@@ -22,8 +22,13 @@ from .labels import en, zh  # noqa: E402
 from .models import build_resnet18
 
 
-def load_model(checkpoint: Path, device: torch.device, use_skip: bool = True):
-    model = build_resnet18(num_classes=43, use_skip=use_skip).to(device)
+def load_model(checkpoint: Path, device: torch.device, use_skip: bool | None = None):
+    """加载检查点。
+
+    use_skip 传 None 时会自动判断:消融实验里去掉跳跃连接的模型没有 1x1 投影层,
+    结构不同,直接按默认结构加载会报键名缺失。这里根据权重里有没有 downsample
+    来自动选择结构,调用方就不需要记住每个检查点是哪种配置了。
+    """
     try:
         # 优先用安全模式加载(只允许张量和基本类型)
         state = torch.load(checkpoint, map_location=device, weights_only=True)
@@ -31,6 +36,11 @@ def load_model(checkpoint: Path, device: torch.device, use_skip: bool = True):
         # 早期版本的检查点里混进了 numpy 标量,安全模式会拒绝,
         # 这里退回普通模式。因为权重都是自己训练出来的,可以信任。
         state = torch.load(checkpoint, map_location=device, weights_only=False)
+
+    if use_skip is None:
+        use_skip = any("downsample" in key for key in state["model"])
+
+    model = build_resnet18(num_classes=43, use_skip=use_skip).to(device)
     model.load_state_dict(state["model"])
     model.eval()
     return model, state
