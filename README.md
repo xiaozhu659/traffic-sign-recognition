@@ -90,5 +90,9 @@ https://benchmark.ini.rub.de/gtsrb_dataset.html
 
 ![推理演示](docs/figures/predictions.png)
 
+数据集本身的 43 个类别各一张:
+
+![43 类全览](docs/figures/class_gallery.png)
+
 完整的实验数据、分析与复现方式见 [docs/实验结果.md](docs/实验结果.md),
 项目说明与个人感悟见 [docs/项目说明.md](docs/项目说明.md)。

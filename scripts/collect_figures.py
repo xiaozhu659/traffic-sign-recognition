@@ -24,6 +24,7 @@ TARGET_DIR = PROJECT_ROOT / "docs" / "figures"
 # 源文件 -> 入库文件名
 FIGURES = {
     "samples_grid.png": "samples.png",
+    "class_gallery.png": "class_gallery.png",
     "fig_class_distribution.png": "class_distribution.png",
     "fig_image_size.png": "image_size.png",
     "fig_curves_comparison.png": "curves_comparison.png",
