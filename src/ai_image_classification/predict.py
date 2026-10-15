@@ -142,7 +142,8 @@ def main() -> None:
         print(f"\n抽样 {labeled} 张,预测正确 {correct} 张,准确率 {correct / labeled * 100:.1f}%")
 
     fig.suptitle("交通标志识别结果", fontsize=15)
-    fig.tight_layout()
+    # 给大标题留出空间,否则它会压住第一行图片的标题
+    fig.tight_layout(rect=(0, 0, 1, 0.96))
     out_path = Path(args.out) if args.out else FIGURE_DIR / "predictions.png"
     fig.savefig(out_path, dpi=130)
     print(f"结果图已保存:{out_path}")
